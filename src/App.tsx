@@ -8,11 +8,16 @@ import {
     useDroppable
 } from "@dnd-kit/core"
 import {useDropzone} from "react-dropzone";
-import {Download, Export} from "@phosphor-icons/react";
+import { Export } from "@phosphor-icons/react";
 import {toPng} from "html-to-image";
 import {useCallback, useRef, useState} from "react";
 
-function Droppable({ id, children }) {
+interface DroppableProps {
+    id: string;
+    children: React.ReactNode;
+}
+
+function Droppable({id, children}: DroppableProps) {
     const { isOver, setNodeRef } = useDroppable({ id })
     const style = {
         backgroundColor: isOver ? '#f0f0f0' : undefined,
@@ -30,7 +35,13 @@ function Droppable({ id, children }) {
     )
 }
 
-function Draggable({ id, image, children }) {
+interface DraggableProps {
+    id: string;
+    image: string;
+    children?: React.ReactNode;
+}
+
+function Draggable({id, image}: DraggableProps) {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id,
     })
@@ -56,8 +67,19 @@ function Draggable({ id, image, children }) {
     )
 }
 
-const Tier = (tier: any) => {
-    const onDrop = useCallback(acceptedFiles => {
+interface TierProps {
+    name: string;
+    background: string;
+    images: Array<{
+        id: string;
+        label: string;
+        url: string;
+    }>;
+    handleImageDrop: (tierName: string, files: File[]) => void;
+}
+
+const Tier = (tier: TierProps) => {
+    const onDrop = useCallback((acceptedFiles: File[]) => {
         // Do something with the files
         tier.handleImageDrop(tier.name, acceptedFiles)
     }, [])
@@ -86,7 +108,17 @@ const Tier = (tier: any) => {
 }
 
 function App() {
-    const [tiers, setTiers] = useState([
+    interface TierState {
+        name: string;
+        background: string;
+        images: Array<{
+            id: string;
+            label: string;
+            url: string;
+        }>;
+    }
+
+    const [tiers, setTiers] = useState<TierState[]>([
         { name: 'S', background: '#FF9C9C', images: [] },
         { name: 'B', background: '#FFB163', images: [] },
         { name: 'C', background: '#FFD86C', images: [] },
@@ -96,16 +128,18 @@ function App() {
 
 
 
-    const handleImageDrop = (tier_name: string, files: File[]) => {
+    const handleImageDrop = (tier_name: string, files: File & any[]) => {
         setTiers((tiersx) => {
-            let tiers = [...tiersx];
-            let tier = tiers.find(y => y.name === tier_name);
-            for (var file of files) {
-                tier.images = [...tier.images, {
-                    id: `${file.name}-${Math.round(+new Date()/1000)}`,
-                    label: file.name,
-                    url: URL.createObjectURL(file)
-                }]
+            const tiers = [...tiersx];
+            const tier = tiers.find(y => y.name === tier_name);
+            for (const file of files) {
+                if (tier?.images) {
+                    tier.images = [...tier.images, {
+                        id: `${file.name}-${Math.round(+new Date()/1000)}`,
+                        label: file.name,
+                        url: URL.createObjectURL(file)
+                    } as any]
+                }
             }
 
             return [...tiers]
@@ -133,15 +167,19 @@ function App() {
     }, [ref])
 
 
+    interface DragEndEvent {
+        active: { id: string };
+        over: { id: string } | null;
+    }
 
-    const handleDragEnd = (event) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
 
         if (!over || active.id === over.id) return
 
         // Remove from source
-        let item = tiers.map(x => x.images).flat(1).find(i => i.id === active.id)
-        let updatedTiers = tiers.map(tier => {
+        const item = tiers.map(x => x.images).flat(1).find(i => i.id === active.id)
+        const updatedTiers = tiers.map(tier => {
             const existing = tier.images.find(i => i.id === active.id)
             if (existing) {
                 tier.images = tier.images.filter(i => i.id !== active.id)
@@ -152,14 +190,14 @@ function App() {
         // Place into target
         const targetIndex = updatedTiers.findIndex(t => t.name === over.id)
         if (targetIndex !== -1) {
-            updatedTiers[targetIndex].images.push(item)
+            updatedTiers[targetIndex].images.push(item as any)
         }
 
         setTiers(updatedTiers)
     }
 
     return (
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd as any}>
             <div  className="text-black text-center pt-12">
                 <img src={'/logo.png'} className={"max-w-72 m-auto"}/>
                 <p className="text-[18px] mt-2 text-neutral-600">
@@ -173,7 +211,7 @@ function App() {
                 <div  >
                     <div ref={ref}  className="space-y-4 w-[80%] pb-12 mt-9 m-auto">
                         {tiers.map((tier) => (
-                            <Tier handleImageDrop={handleImageDrop} {...tier}/>
+                            <Tier handleImageDrop={handleImageDrop as any} {...tier}/>
                         ))}
                     </div>
                 </div>

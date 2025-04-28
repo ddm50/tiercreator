@@ -154,7 +154,7 @@ function App() {
             return
         }
 
-        toPng(ref.current, { cacheBust: false, width: ref.current.clientWidth+230, height: ref.current.clientHeight, backgroundColor:'white' })
+        toPng(ref.current, { cacheBust: false, backgroundColor:'white' })
             .then((dataUrl) => {
                 const link = document.createElement('a')
                 link.download = 'tier.png'
